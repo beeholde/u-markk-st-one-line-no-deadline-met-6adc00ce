@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One Line, No Deadline Met — v2 entry.
+"""One Line, No Deadline Met — v3 entry.
 
 Writes one single-line joke giving an excuse for a missed deadline to
 /output/entry.txt. Python 3 standard library only; no network, no input
@@ -11,12 +11,12 @@ import os
 import sys
 from pathlib import Path
 
-# The entry: an eight-dollar lottery win treated like a retirement
-# plan. The contrast between the tiny prize and the grand evening is
-# the turn; the deadline retiring first is the punch.
+# The entry: a fax machine stuck redialling a number from 1998. The
+# dated machine doing its one job to the wrong decade is the turn;
+# the deadline hanging up first is the punch.
 LINE = (
-    "I won eight dollars on a lottery ticket and spent the evening "
-    "planning my retirement, so the deadline retired first."
+    "I faxed the report at four, and the machine spent the evening "
+    "redialling a number from 1998, so the deadline hung up first."
 )
 
 
@@ -30,23 +30,28 @@ def check_line(line: str) -> None:
         )
     if "\n" in line or "\r" in line:
         raise SystemExit("line must be a single line")
+    if any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in line):
+        raise SystemExit("line must not contain control characters")
     if not line.strip():
         raise SystemExit("line must not be only whitespace")
     if line != line.strip():
         raise SystemExit("line must not start or end with whitespace")
+    if line[-1] not in ".!?":
+        raise SystemExit("line must end as one complete sentence")
 
 
 def main() -> None:
     check_line(LINE)
+    payload = LINE.encode("utf-8")
     out_dir = Path(os.environ.get("OUTPUT_DIR", "/output"))
     out_dir.mkdir(parents=True, exist_ok=True)
     target = out_dir / "entry.txt"
-    target.write_bytes(LINE.encode("utf-8"))
+    target.write_bytes(payload)
     os.chmod(target, 0o644)
     # Round-trip self-check: the file on disk must be the line, byte for
     # byte — a partial write or an encoding slip fails loudly instead of
     # shipping a truncated entry to the gate.
-    if target.read_bytes() != LINE.encode("utf-8"):
+    if target.read_bytes() != payload:
         raise SystemExit("written entry does not match the line")
 
 
